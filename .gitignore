@@ -5,4 +5,5 @@ Include/
 pyvenv.cfg
 etc/
 __pycache__/
-credenciales.py
+.venv/
+.streamlit/secrets.toml

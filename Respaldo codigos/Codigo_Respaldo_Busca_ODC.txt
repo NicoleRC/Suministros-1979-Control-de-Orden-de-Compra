@@ -1,0 +1,346 @@
+import streamlit as st
+import pyodbc
+import pandas as pd
+from credenciales import conexion
+from datetime import datetime
+import time
+
+# Ajustes de estilo para Streamlit
+css_Margenes = """
+    <style>
+        .block-container {
+            padding-top: 1cm;
+            margin: 0;
+            max-width: 100%;
+            padding-left: 2cm;
+            padding-right: 2cm;
+        }
+    </style>
+"""
+st.markdown(css_Margenes, unsafe_allow_html=True)
+
+# Conexión a la base de datos
+conn = conexion()
+cursor = conn.cursor()
+
+def plantilla():
+    try:
+        cursor.execute("""
+            SELECT DISTINCT [PROV] 
+            FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] 
+            ORDER BY [PROV] ASC
+        """)
+        proveedores = [row[0] for row in cursor.fetchall()]
+        return proveedores
+    except Exception as e:
+        st.write(f"Error en la consulta SQL: {e}")
+        return []
+
+def obtener_ordenes_compra():
+    if cursor is not None:
+        try:
+            cursor.execute("""
+                SELECT DISTINCT FLOOR(CONVERT(DECIMAL, [ODCDOC])) AS [ODCDOC] 
+                FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] 
+                WHERE [PROV]<>'' 
+                ORDER BY FLOOR(CONVERT(DECIMAL, [ODCDOC])) DESC
+            """)
+            resultados = cursor.fetchall()
+            ordenes_compra = [str(fila[0]) for fila in resultados]
+            return ordenes_compra
+        except pyodbc.Error as e:
+            sqlstate = e.args[0]
+            if sqlstate == '42S02':
+                st.error(f"Error: La tabla o vista no existe. {e}")
+            elif sqlstate == '42S22':
+                st.error(f"Error: La columna no existe. {e}")
+            else:
+                st.error(f"Error al obtener órdenes de compra: {e}")
+            return []
+    else:
+        return []
+
+# Inicializar estado
+if "Lista_Proveedores" not in st.session_state:
+    st.session_state["Lista_Proveedores"] = "Seleccione el proveedor"
+if "filtro2" not in st.session_state:
+    st.session_state["filtro2"] = None
+if "fecha_inicial" not in st.session_state:
+    st.session_state["fecha_inicial"] = None
+if "orden_compra" not in st.session_state:  # Clave corregida
+    st.session_state["orden_compra"] = "Nº ODC"
+if "fecha_final" not in st.session_state:
+    st.session_state["fecha_final"] = None
+if "anio" not in st.session_state:
+    st.session_state["anio"] = None
+if "mes" not in st.session_state:
+    st.session_state["mes"] = None
+if "limpiar" not in st.session_state:
+    st.session_state["limpiar"] = False
+
+# Simular clic en el botón "Limpiar Campos" al inicio para que no muestre selección en filtro por fecha:
+if "limpiar_inicio" not in st.session_state:
+    st.session_state["limpiar_inicio"] = True
+    st.session_state["limpiar"] = True
+    st.rerun()
+
+# Botón para limpiar campos:
+if st.session_state["limpiar"]:
+    st.session_state["limpiar"] = False
+    st.session_state["Lista_Proveedores"] = "Seleccione el proveedor"
+    st.session_state["orden_compra"] = "Nº ODC"  # Clave corregida
+    st.session_state["filtro2"] = None
+    st.session_state["fecha_inicial"] = None
+    st.session_state["fecha_final"] = None
+    st.session_state["anio"] = None
+    st.session_state["mes"] = None
+    st.rerun()  # Recargar la página
+
+# Ruta de la imagen
+ruta_imagen = "images/Suministros Logo.png"
+
+# Mostrar la imagen
+st.image(ruta_imagen, caption=" ", width=200)
+st.title("CONTROL DE ÓRDENES DE COMPRA")
+
+proveedores = plantilla()
+ordenes_compra = obtener_ordenes_compra()
+
+def actualizar_seleccion1():  # Cuando selecciono Nº ODC - Se borran las demás opciones
+    st.session_state["Lista_Proveedores"] = "Seleccione el proveedor"
+    st.session_state["filtro2"] = None
+
+# Selección de orden de compra
+col1, col2, col3, col4, col5, col6 = st.columns(6)
+with col1:
+    orden_compra_seleccionada = st.selectbox(
+        "Si conoce el Nº de la Orden:", ["Nº ODC"] + ordenes_compra, key="orden_compra", on_change=actualizar_seleccion1
+    )
+
+st.divider()
+
+def buscar_mes(cursor):  # CONSULTA AÑO - MES
+    if cursor is not None:
+        try:
+            cursor.execute("""
+                SELECT DISTINCT YEAR([FECHAODC]) AS AÑO, MONTH([FECHAODC]) AS NUMERO_MES 
+                FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] 
+                ORDER BY AÑO, NUMERO_MES;
+            """)
+            resultados = cursor.fetchall()
+
+            # Convertir los números de mes a nombres en español
+            meses_nombres = []
+            for fila in resultados:
+                año = fila.AÑO
+                numero_mes = fila.NUMERO_MES
+                nombre_mes = obtener_nombre_mes(numero_mes)  # Función auxiliar para obtener el nombre del mes
+                meses_nombres.append({"año": año, "mes": nombre_mes, "numero_mes": numero_mes})  # Incluir numero_mes
+
+            return meses_nombres
+        except pyodbc.Error as e:
+            sqlstate = e.args[0]
+            if sqlstate == '42S02':
+                st.error(f"Error: La tabla o vista no existe. {e}")
+            elif sqlstate == '42S22':
+                st.error(f"Error: La columna no existe. {e}")
+            else:
+                st.error(f"Error al obtener meses: {e}")
+            return []
+    else:
+        return []
+
+def obtener_nombre_mes(numero_mes):  # CAMBIO DE MES (NUMÉRICO A DESCRIPCIÓN EN LETRAS)
+    nombres_meses = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    return nombres_meses.get(numero_mes, 'Mes Inválido')
+
+def actualizar_seleccion2():  # Cuando selecciono Proveedor - Se borra el Nº ODC
+    st.session_state["orden_compra"] = "Nº ODC"
+
+# SELECCIÓN DE PROVEEDOR (LISTADO)
+col1, col2, col3 = st.columns([4, 1, 2])
+with col1:
+    Lista = st.selectbox(
+        "Lista de Proveedores:",
+        ["Seleccione el proveedor"] + proveedores,
+        key="Lista_Proveedores", on_change=actualizar_seleccion2
+    )
+
+def actualizar_seleccion3():  # Cuando selecciono fecha - Se borra Nº ODC
+    st.session_state["orden_compra"] = "Nº ODC"
+
+# SELECCIÓN DE BOTÓN: RANGO DE FECHA - MES
+with col2:
+    filtro2 = st.radio("Filtrar por:", ("Rango de fechas", "Mes"), key="filtro2", on_change=actualizar_seleccion3)
+    fecha_inicial = None
+    fecha_final = None
+    anio= None
+    
+# SELECCIÓN DE RANGO DE FECHAS O MES
+with col3:
+    if filtro2 == "Rango de fechas":
+        sub_col1, sub_col2 = st.columns(2)  # Crear subcolumnas dentro de col3
+        with sub_col1:
+            fecha_inicial = st.date_input("Fecha Inicial:", key="fecha_inicial")
+        with sub_col2:
+            fecha_final = st.date_input("Fecha Final:", key="fecha_final")
+
+    if filtro2 == "Mes":
+        meses_disponibles = buscar_mes(cursor)  # Obtener los meses disponibles
+        # Obtener años únicos y ordenarlos
+        anios_unicos = sorted(list(set(mes["año"] for mes in meses_disponibles)))
+
+        # Obtener meses únicos para el año seleccionado y ordenarlos
+        meses_unicos = sorted(list(set(mes["mes"] for mes in meses_disponibles)))
+
+        sub_col1, sub_col2 = st.columns(2)  # Crear subcolumnas dentro de col3
+
+        with sub_col1:
+            anio = st.selectbox("Año:", options=anios_unicos, key="anio")
+
+        with sub_col2:
+            # Filtrar los meses disponibles para el año seleccionado
+            meses_filtrados = [mes["mes"] for mes in meses_disponibles if mes["año"] == anio]
+            mes = st.selectbox("Mes:", options=meses_filtrados, key="mes")
+
+                # Filtrar los datos según el año y mes seleccionados
+        datos_filtrados = [mes for mes in meses_disponibles if mes["año"] == anio and mes["mes"] == mes]
+
+    else:
+        # Mostrar todos los datos (si no se aplica el filtro)
+        meses_disponibles = buscar_mes(cursor)
+
+# Botones de acción
+col1, col2, col3, col4 = st.columns(4)
+with col2:
+    buscar = st.button("Buscar ODC")
+with col4:
+    limpiar = st.button("Limpiar Campos")
+
+# Ejecución de la búsqueda
+if buscar:
+    try:
+        # Construir la consulta dinámica
+        consulta_datos = "SELECT [ODCDOC] FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [PROV]<>''"
+        if Lista != "Seleccione el proveedor":
+            consulta_datos += f" AND [PROV] = '{Lista}'"
+        if filtro2 == "Rango de fechas":
+            consulta_datos += f" AND FECHA BETWEEN '{fecha_inicial}' AND '{fecha_final}'"
+
+        anio = None #Inicializar anio.
+        mes= None
+        if filtro2 == "Mes":
+            numero_mes = [item["numero_mes"] for item in meses_disponibles if item["año"] == anio and item["mes"] == mes][0]
+            consulta_datos += f" AND YEAR(FECHAODC) = '{anio}' AND MONTH(FECHAODC) = '{numero_mes}'"
+
+        st.divider()
+
+        # Ejecutar la consulta SQL
+        df = pd.read_sql(consulta_datos, conn)
+
+        # Mostrar Nº ODC como botones o tabla
+        if orden_compra_seleccionada == "Nº ODC":
+            # Mostrar botones si no se ha seleccionado una orden
+            ordenes_compra = obtener_ordenes_compra(conn, Lista, filtro2, fecha_inicial, fecha_final, anio, mes)
+
+            num_botones = len(ordenes_compra)
+            num_columnas = min(num_botones, 10)  # Máximo 10 columnas
+            columnas = st.columns(num_columnas)
+
+            orden_compra_seleccionada_boton = None  # Inicializamos la variable
+
+            for i, odc in enumerate(ordenes_compra):
+                with columnas[i % num_columnas]:
+                    if st.button(odc):
+                        orden_compra_seleccionada_boton = odc  # Guardamos el valor del botón seleccionado
+
+            if orden_compra_seleccionada_boton:
+                try:
+                    consulta_odc_seleccionada = f"SELECT * FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [ODCDOC] = '{orden_compra_seleccionada_boton}'"
+                    df_odc_seleccionada = pd.read_sql(consulta_odc_seleccionada, conn)
+                    st.dataframe(df_odc_seleccionada)
+                except Exception as e:
+                    st.error(f"Error al ejecutar la consulta: {e}")
+        else:
+            # Mostrar tabla si se ha seleccionado una orden
+            try:
+                consulta_n_ODC = f"SELECT [FECHAODC] AS [Fecha ODC], [Barra] AS [SKU], [Producto] AS [Descripción de Producto],FORMAT([CantODC], 'N2', 'es-ES') AS [Cant ODC],[RECDOC] AS [Nº REC],[FECHAREC] AS [Fecha RECEP],FORMAT([CantREC], 'N2', 'es-ES') AS [Cant REC],FORMAT([FALTANTE], 'N2', 'es-ES') AS [Cant Faltante] FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [ODCDOC] = '{orden_compra_seleccionada}'ORDER BY [Nº REC] ASC"
+                df_n_ODC = pd.read_sql(consulta_n_ODC, conn)
+
+                if not df_n_ODC.empty:
+                    # Crear resumen
+                    consulta_PROVEEDOR = (f"SELECT DISTINCT [PROV] AS [Proveedor] FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [ODCDOC] = '{orden_compra_seleccionada}'")
+                    df_proveedor = pd.read_sql(consulta_PROVEEDOR, conn)
+                    if not df_proveedor.empty:
+                        proveedor = df_proveedor["Proveedor"].iloc[0]  # Obtienen el primer valor del df
+
+                    consulta_RIF = (f"SELECT DISTINCT [RIF] FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [ODCDOC] = '{orden_compra_seleccionada}'")
+                    df_rif = pd.read_sql(consulta_RIF, conn)
+                    if not df_rif.empty:
+                        rif = df_rif["RIF"].iloc[0]  # Obtienen el primer valor del df
+
+                    consulta_DESTINO = (f"SELECT DISTINCT [Deposito] AS [Destino ODC] FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [ODCDOC] = '{orden_compra_seleccionada}'")
+                    df_destino = pd.read_sql(consulta_DESTINO, conn)
+                    if not df_destino.empty:
+                        destino = df_destino["Destino ODC"].iloc[0]  # Obtienen el primer valor del df
+
+                    consulta_RECEPCION = (f"SELECT DISTINCT [ALM_ORIG] AS [Lugar RECEP] FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [ODCDOC] = '{orden_compra_seleccionada}'")
+                    df_recepcion = pd.read_sql(consulta_RECEPCION, conn)
+                    if not df_recepcion.empty:
+                        recepcion = df_recepcion["Lugar RECEP"].iloc[0]  # Obtienen el primer valor del df
+
+                    consulta_REC = (f"SELECT DISTINCT CONVERT(INT, FLOOR(CONVERT(DECIMAL(10, 0), [RECDOC]))) AS [Nº REC] FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] WHERE [ODCDOC] = '{orden_compra_seleccionada}'")
+                    df_rec = pd.read_sql(consulta_REC, conn)
+                    # Extraer los valores de la columna 'Nº REC' y formatearlos como una cadena separada por comas.
+                    rec = ", ".join(map(str, df_rec['Nº REC'].tolist()))
+
+                    # VALORES ESCRITO SOBRE LA ODC BUSCADA POR EL Nº:
+                    # st.write(f"**Nº ODC:** {orden_compra_seleccionada}")
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        st.markdown(f'<span style="font-size: 24px; color: white;">Nº ODC:</span> <span style="font-size: 24px; color: #fd6214;">**{orden_compra_seleccionada}**</span>', unsafe_allow_html=True)
+
+                        container1 = st.container()
+                        with container1:
+                            st.markdown(f"**RIF:** {rif}")
+                        container2 = st.container()
+                        with container2:
+                            st.markdown(f"**PROVEEDOR:** {proveedor}")
+
+                    with col2:
+                        st.markdown(f'<span style="font-size: 24px; color: white;">Nº REC:</span> <span style="font-size: 24px; color: #fd6214;">**{rec}**</span>', unsafe_allow_html=True)
+
+                        container3 = st.container()
+                        with container3:
+                            st.markdown(f"**DESTINO (ODC):** {destino}")
+                        container4 = st.container()
+                        with container4:
+                            st.markdown(f"**RECEPCIÓN:** {recepcion}")     
+                            
+                    st.dataframe(df_n_ODC)
+            
+            except Exception as e:
+                st.error(f"Error al obtener detalles de la orden de compra: {e}")
+    
+    except Exception as e:
+        st.error(f"Error al ejecutar la consulta: {e}")
+
+
+
+    finally:
+        # Cerrar la conexión siempre
+        if 'conn' in locals() and conn:
+            cursor.close()
+            conn.close()
+
+
+# Botón para limpiar la sesión
+if limpiar:
+    st.session_state["limpiar"] = True
+    st.rerun()

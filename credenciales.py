@@ -1,17 +1,14 @@
-import pyodbc
+from sqlalchemy import create_engine
 import streamlit as st
+import pandas as pd
 
 def conexion():
     try:
-        conn = pyodbc.connect(
-            f"DRIVER={st.secrets['sql_server']['driver']};"
-            f"SERVER={st.secrets['sql_server']['server']};"
-            f"DATABASE={st.secrets['sql_server']['database']};"
-            f"UID={st.secrets['sql_server']['uid']};"
-            f"PWD={st.secrets['sql_server']['pwd']};"
+        engine = create_engine(
+            f"mssql+pymssql://{st.secrets['sql_server']['uid']}:{st.secrets['sql_server']['pwd']}@{st.secrets['sql_server']['server']}/{st.secrets['sql_server']['database']}"
         )
-        return conn
+        return engine
     except Exception as e:
         st.error(f"Error de conexión: {e}")
         return None
-    
+engine = conexion()

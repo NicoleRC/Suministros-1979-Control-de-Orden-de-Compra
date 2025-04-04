@@ -107,7 +107,26 @@ def datos_resumen(documento, engine):
     except Exception as e:
         st.error(f"Error en la consulta SQL: {e}")
         return pd.DataFrame(), None, None, None, None, None  # retornar todos los valores
-    
+
+# Filtrar por fecha
+def ordenes_fecha(proveedor):
+    if not proveedor:
+        return []
+    try:
+        query = f"""
+            SELECT DISTINCT FLOOR(CONVERT(DECIMAL, [ODCDOC])) AS [ODCDOC] 
+            FROM [VAD10_SCORP].[dbo].[REP_ODCxREC] 
+            WHERE [PROV] = '{proveedor}' and [FECHAODC]
+            ORDER BY FLOOR(CONVERT(DECIMAL, [ODCDOC])) DESC
+        """
+        df = pd.read_sql(query, engine)
+        df['ODCDOC'] = round(df['ODCDOC'], 0)
+        return df['ODCDOC'].to_list()
+    except Exception as e:
+        st.error(f"Error en la consulta SQL: {e}")
+        return []
+
+
 # Ruta de la imagen
 st.image("images/Suministros Logo.png", caption=" ", width=200)
 st.title("CONTROL DE ÓRDENES DE COMPRA")
@@ -251,20 +270,21 @@ with tab1:
         st.info("Por favor, selecciona un proveedor para continuar.")
 
 with tab2:
-    st.write("En esta sección encontrarán la Efectividad por Proveedor de Forma Mensual.")
-    
-    # Lista de proveedores
-    proveedores = plantilla()
+    st.write("PÁGINA EN CONSTRUCCIÓN")
+    #st.write("En esta sección encontrarán la Efectividad por Proveedor de Forma Mensual.")
 
     # Selección de proveedor
-    col1, col2 = st.columns(2)
-    with col1:
-        proveedor2 = st.selectbox(
-            "Lista de Proveedores:",
-            proveedores,
-            key="Lista_Proveedores2",
-            index=None,
-            placeholder="Selecciona un proveedor")
-    
+    #col1, col2 = st.columns(2)
+    #with col1:
+    #    proveedor2 = st.selectbox(
+    #        "Lista de Proveedores:",
+    #        proveedores,
+    #        key="Lista_Proveedores2",
+    #        index=None,
+    #        placeholder="Selecciona un proveedor")
+
+    #with col2:
+    #    filtro_fecha= st.selectbox(label="Filtro Fecha:", options="Año",  placeholder="Selecciona el año")
+ 
     
     

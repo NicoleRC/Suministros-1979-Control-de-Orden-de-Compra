@@ -181,8 +181,26 @@ with tab1:
             if "documento_seleccionado" in st.session_state:
                 st.success(f'Has seleccionado la Orden de Compra Nº: {st.session_state["documento_seleccionado"]}')
                 df_detalle = detalle(st.session_state["documento_seleccionado"])
+
+                # --- Limpieza de datos para 'Cant ODC' ---
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].astype(str).str.strip() # Convertir a string y quitar espacios
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].str.replace(',', '.', regex=False) # Reemplazar comas por puntos
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].str.replace(r'[^\d\.]', '', regex=True) # Eliminar caracteres no numéricos (excepto el punto)
                 df_detalle['Cant ODC'] = pd.to_numeric(df_detalle['Cant ODC'], errors="coerce")
+
+                # --- Limpieza de datos para 'Cant REC' ---
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].astype(str).str.strip() # Convertir a string y quitar espacios
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].str.replace(',', '.', regex=False) # Reemplazar comas por puntos
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].str.replace(r'[^\d\.]', '', regex=True) # Eliminar caracteres no numéricos (excepto el punto)
                 df_detalle['Cant REC'] = pd.to_numeric(df_detalle['Cant REC'], errors="coerce")
+
+                # --- Manejo de valores NaN (opcional) ---
+                # Ejemplo: Reemplazar NaN con 0
+                # df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
+                # df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
+
+                # Ejemplo: Eliminar filas con NaN en ambas columnas
+                # df_detalle = df_detalle.dropna(subset=['Cant ODC', 'Cant REC'])
                 CANTIDADES = df_detalle['Cant ODC'].sum()
                 CANTIDADES_REC = df_detalle['Cant REC'].sum()
                 FALTANTE = CANTIDADES - CANTIDADES_REC

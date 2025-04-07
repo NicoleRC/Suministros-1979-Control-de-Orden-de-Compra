@@ -4,6 +4,8 @@ from datetime import datetime
 from credenciales import conexion
 import io
 import locale
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Conexión a la base de datos
 engine = conexion()
@@ -181,19 +183,14 @@ with tab1:
             if "documento_seleccionado" in st.session_state:
                 st.success(f'Has seleccionado la Orden de Compra Nº: {st.session_state["documento_seleccionado"]}')
                 df_detalle = detalle(st.session_state["documento_seleccionado"])
-                
-                # Verificar y manejar valores NaN
-                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
-                df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
-
-                # Eliminar espacios en blanco
-                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].str.strip()
-                df_detalle['Cant REC'] = df_detalle['Cant REC'].str.strip()
 
                 # Convertir a números
-                df_detalle['Cant ODC'] = pd.to_numeric(df_detalle['Cant ODC'], errors="coerce")
-                df_detalle['Cant REC'] = pd.to_numeric(df_detalle['Cant REC'], errors="coerce")
+                df_detalle['Cant ODC'] = pd.to_numeric(df_detalle['Cant ODC'], errors='coerce')
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
                 
+                df_detalle['Cant REC'] = pd.to_numeric(df_detalle['Cant REC'], errors='coerce')
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
+                            
                 CANTIDADES = df_detalle['Cant ODC'].sum()
                 CANTIDADES_REC = df_detalle['Cant REC'].sum()
                 FALTANTE = CANTIDADES - CANTIDADES_REC

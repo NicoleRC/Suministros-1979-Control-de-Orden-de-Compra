@@ -182,8 +182,17 @@ with tab1:
                 st.success(f'Has seleccionado la Orden de Compra Nº: {st.session_state["documento_seleccionado"]}')
                 df_detalle = detalle(st.session_state["documento_seleccionado"])
                 
-                df_detalle['Cant ODC'] = pd.to_numeric(df_detalle['CantODC'], errors="coerce")
-                df_detalle['Cant REC'] = pd.to_numeric(df_detalle['CantREC'], errors="coerce")
+                # Verificar y manejar valores NaN
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
+
+                # Eliminar espacios en blanco
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].str.strip()
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].str.strip()
+
+                # Convertir a números
+                df_detalle['Cant ODC'] = pd.to_numeric(df_detalle['Cant ODC'], errors="coerce")
+                df_detalle['Cant REC'] = pd.to_numeric(df_detalle['Cant REC'], errors="coerce")
                 
                 CANTIDADES = df_detalle['Cant ODC'].sum()
                 CANTIDADES_REC = df_detalle['Cant REC'].sum()

@@ -5,7 +5,7 @@ import pandas as pd
 def conexion():
     try:
         server = st.secrets['sql_server']['server']
-        port = st.secrets['sql_server'].get('port', 1433) # Obtener el puerto, o usar 1433 por defecto
+        port = st.secrets['sql_server'].get('port', 55401)
         database = st.secrets['sql_server']['database']
         uid = st.secrets['sql_server']['uid']
         pwd = st.secrets['sql_server']['pwd']

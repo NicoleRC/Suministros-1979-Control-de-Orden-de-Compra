@@ -183,7 +183,6 @@ with tab1:
             if "documento_seleccionado" in st.session_state:
                 st.success(f'Has seleccionado la Orden de Compra Nº: {st.session_state["documento_seleccionado"]}')
                 df_detalle = detalle(st.session_state["documento_seleccionado"])
-                st.write(df_detalle.dtypes)
 
                 # Convertir a números
                 df_detalle['Cant ODC'] =df_detalle['Cant ODC'].astype('float64')

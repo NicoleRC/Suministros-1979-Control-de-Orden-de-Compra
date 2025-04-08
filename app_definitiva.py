@@ -59,7 +59,7 @@ def ordenes(proveedor):
 # Función para mostrar detalle de una orden
 def detalle(documento):
     try:
-        locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
+        
         query = f"""
             SELECT [FECHAODC] AS [Fecha ODC],
                 [Barra] AS [SKU],
@@ -83,7 +83,7 @@ def convertir_a_entero(documento):
 
 def datos_resumen(documento, engine):
     try:
-        locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
+        
         # Convertir a entero, si es necesario
         odc_doc = int(float(st.session_state["documento_seleccionado"]))
         datos = f"""
@@ -183,13 +183,14 @@ with tab1:
             if "documento_seleccionado" in st.session_state:
                 st.success(f'Has seleccionado la Orden de Compra Nº: {st.session_state["documento_seleccionado"]}')
                 df_detalle = detalle(st.session_state["documento_seleccionado"])
+                st.write(df_detalle.dtypes)
 
                 # Convertir a números
-                #df_detalle['Cant ODC'] = pd.to_numeric(df_detalle['Cant ODC'], errors='coerce')
-                #df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
+                df_detalle['Cant ODC'] =df_detalle['Cant ODC'].astype('float64')
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
                 
-                #df_detalle['Cant REC'] = pd.to_numeric(df_detalle['Cant REC'], errors='coerce')
-                #df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].astype('float64')
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
                             
                 CANTIDADES = df_detalle['Cant ODC'].sum()
                 CANTIDADES_REC = df_detalle['Cant REC'].sum()

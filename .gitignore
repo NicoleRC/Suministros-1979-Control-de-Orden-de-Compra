@@ -7,3 +7,4 @@ etc/
 __pycache__/
 .venv/
 .streamlit/secrets.toml
+prueba.xlsx

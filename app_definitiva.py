@@ -186,11 +186,24 @@ with tab1:
 
                 # Convertir a números
                 
-                locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
+                
+                # Intentar establecer la configuración regional deseada
+                try:
+                    locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
+                except locale.Error:
+                    #Si falla, establecer una configuración regional predeterminada
+                    locale.setlocale(locale.LC_ALL, '')
+
                 df_detalle['Cant ODC'] =df_detalle['Cant ODC'].astype('float64')
                 df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
                 
-                
+                # Intentar establecer la configuración regional deseada
+                try:
+                    locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
+                except locale.Error:
+                    #Si falla, establecer una configuración regional predeterminada
+                    locale.setlocale(locale.LC_ALL, '')
+                    
                 df_detalle['Cant REC'] = df_detalle['Cant REC'].astype('float64')
                 df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
                             

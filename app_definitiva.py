@@ -192,9 +192,7 @@ with tab1:
                     # Si falla, establecer una configuración regional predeterminada
                     locale.setlocale(locale.LC_ALL, '')
 
-                # Crear un DataFrame de ejemplo
-                data = {'Cant ODC': [1000.5, 2000.75, 3000.25], 'Cant REC': [500.25, 1500.5, 2500.75]}
-                df_detalle = pd.DataFrame(data)
+                df_detalle = pd.DataFrame(df_detalle)
 
                 # Convertir a float y llenar NaN
                 df_detalle['Cant ODC'] = df_detalle['Cant ODC'].astype('float64').fillna(0)

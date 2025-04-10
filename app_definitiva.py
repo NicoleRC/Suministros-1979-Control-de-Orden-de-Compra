@@ -10,9 +10,12 @@ logging.basicConfig(level=logging.DEBUG)
 # Conexión a la base de datos
 engine = conexion()
 
+
+
 # Ajustes de estilo para Streamlit
 css_Margenes = """
     <style>
+     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@300;400;500;600;700&display=swap');
         .block-container {
             padding-top: 1cm;
             margin: 0;
@@ -20,7 +23,13 @@ css_Margenes = """
             padding-left: 2cm;
             padding-right: 2cm;
         }
+       
+
+        /* Ocultar menús */
+        #MainMenu, footer, header {
+            visibility: hidden;}
     </style>
+    
 """
 st.markdown(css_Margenes, unsafe_allow_html=True)
 

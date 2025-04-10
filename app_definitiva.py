@@ -184,38 +184,37 @@ with tab1:
                 st.success(f'Has seleccionado la Orden de Compra Nº: {st.session_state["documento_seleccionado"]}')
                 df_detalle = detalle(st.session_state["documento_seleccionado"])
 
-                # Convertir a números
-                
-                
+
                 # Intentar establecer la configuración regional deseada
                 try:
                     locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
                 except locale.Error:
-                    #Si falla, establecer una configuración regional predeterminada
+                    # Si falla, establecer una configuración regional predeterminada
                     locale.setlocale(locale.LC_ALL, '')
 
-                df_detalle['Cant ODC'] =df_detalle['Cant ODC'].astype('float64')
-                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
-                
-                # Intentar establecer la configuración regional deseada
-                try:
-                    locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
-                except locale.Error:
-                    #Si falla, establecer una configuración regional predeterminada
-                    locale.setlocale(locale.LC_ALL, '')
-                    
-                df_detalle['Cant REC'] = df_detalle['Cant REC'].astype('float64')
-                df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)
-                            
+                # Crear un DataFrame de ejemplo
+                data = {'Cant ODC': [1000.5, 2000.75, 3000.25], 'Cant REC': [500.25, 1500.5, 2500.75]}
+                df_detalle = pd.DataFrame(data)
+
+                # Convertir a float y llenar NaN
+                df_detalle['Cant ODC'] = df_detalle['Cant ODC'].astype('float64').fillna(0)
+                df_detalle['Cant REC'] = df_detalle['Cant REC'].astype('float64').fillna(0)
+
+                # Calcular sumas y diferencias
                 CANTIDADES = df_detalle['Cant ODC'].sum()
                 CANTIDADES_REC = df_detalle['Cant REC'].sum()
                 FALTANTE = CANTIDADES - CANTIDADES_REC
-                EFECTIVIDAD = round((CANTIDADES_REC / CANTIDADES) * 100, 2)
-                INCUMPLIMIENTO_PONDERADO = 0 if round((FALTANTE / CANTIDADES) * 100, 2) < 0 else round((FALTANTE / CANTIDADES) * 100, 2)
 
-                CANTIDADES_FORMAT = locale.format_string("%.2f", CANTIDADES, grouping=True)
-                CANTIDADES_REC_FORMAT = locale.format_string("%.2f", CANTIDADES_REC, grouping=True)
-                FALTANTE_FORMAT = locale.format_string("%.2f", FALTANTE, grouping=True)  # Formatear FALTANTE
+                # Formatear cantidades con separador de miles
+                CANTIDADES_FORMAT = locale.format_string("%0.2f", CANTIDADES, grouping=True)
+                CANTIDADES_REC_FORMAT = locale.format_string("%0.2f", CANTIDADES_REC, grouping=True)
+                FALTANTE_FORMAT = locale.format_string("%0.2f", FALTANTE, grouping=True)
+
+                # Mostrar resultados en Streamlit
+                st.write(f"Cantidades ODC: {CANTIDADES_FORMAT}")
+                st.write(f"Cantidades REC: {CANTIDADES_REC_FORMAT}")
+                st.write(f"Faltante: {FALTANTE_FORMAT}")
+
 
                 col1, col2, col3, col4, col5 = st.columns(5)
                 with col1:

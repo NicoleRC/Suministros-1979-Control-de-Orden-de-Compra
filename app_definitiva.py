@@ -185,8 +185,11 @@ with tab1:
                 df_detalle = detalle(st.session_state["documento_seleccionado"])
 
                 # Convertir a números
+                
+                locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
                 df_detalle['Cant ODC'] =df_detalle['Cant ODC'].astype('float64')
                 df_detalle['Cant ODC'] = df_detalle['Cant ODC'].fillna(0)
+                
                 
                 df_detalle['Cant REC'] = df_detalle['Cant REC'].astype('float64')
                 df_detalle['Cant REC'] = df_detalle['Cant REC'].fillna(0)

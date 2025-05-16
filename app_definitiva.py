@@ -369,7 +369,7 @@ if not df_detalle.empty:
 
     # Botón de descarga
     with open(nombre_archivo, "rb") as file:
-        st.download_button("Descargar Excel", file, nombre_archivo,
+        st.download_button("Descargar Excel BD", file, nombre_archivo,
                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 else:
     st.warning("No hay datos disponibles para generar el archivo.")

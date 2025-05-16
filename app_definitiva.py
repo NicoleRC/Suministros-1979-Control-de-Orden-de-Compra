@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from credenciales import conexion
 import io
 import locale
@@ -33,6 +33,29 @@ css_Margenes = """
 """
 st.markdown(css_Margenes, unsafe_allow_html=True)
 
+
+def detalle(documento):
+    try:
+        
+        query = f"""
+            SELECT [FECHAODC] AS [Fecha ODC],
+                [Barra] AS [SKU],
+                [Producto] AS [Descripción de Producto],
+                [CantODC] AS [Cant ODC],
+                [RECDOC] AS [Nº REC],
+                [FECHAREC] AS [Fecha RECEP],
+                [CantREC] AS [Cant REC],
+                [FALTANTE] AS [Cant Faltante]
+            FROM [VAD10_SCORP].[dbo].[REP_ODCxREC]
+            WHERE [ODCDOC] = '{documento}' ORDER BY [Nº REC] ASC
+        """
+        df = pd.read_sql(query, engine)
+        return df
+    except Exception as e:
+        st.error(f"Error en la consulta SQL: {e}")
+        return []
+
+
 # Función para obtener proveedores
 def plantilla():
     try:
@@ -46,6 +69,7 @@ def plantilla():
     except Exception as e:
         st.error(f"Error en la consulta SQL: {e}")
         return []
+
 
 # Función para obtener órdenes de un proveedor
 def ordenes(proveedor):
@@ -301,6 +325,55 @@ with tab1:
             st.warning("No se encontraron órdenes de compra para este proveedor.")
     else:
         st.info("Por favor, selecciona un proveedor para continuar.")
+
+
+
+# BASE DE DATOS COMPLETA (CONSULTA)
+
+def detalle_BD():
+    try:
+        query = """
+            SELECT [RIF],
+                [PROV] AS [Proveedor],
+                [Codigo1] AS [Cod Interno],
+                [Barra] AS [Cod Barra],
+                [Producto] AS [Descripción de Producto],
+                [FECHAODC] AS [Fecha ODC],
+                [ODCDOC] AS [Nº ODC],
+                [CantODC] AS [Cant ODC],
+                [COMPRADOR] AS [Comprador],
+                [FECHAREC] AS [Fecha RECEP],
+                [RECDOC] AS [Nº REC],
+                [CantREC] AS [Cant REC],
+                [RECEPTOR] AS [Receptor],
+                [FALTANTE] AS [Cant Faltante],
+                [Deposito] AS [Deposito de Recepción]
+            FROM [VAD10_SCORP].[dbo].[REP_ODCxREC]
+            ORDER BY [Fecha RECEP] DESC
+        """
+        df = pd.read_sql(query, engine)
+        return df
+    except Exception as e:
+        st.error(f"Error en la consulta SQL: {e}")
+        return pd.DataFrame()
+
+# Obtener datos
+df_detalle = detalle_BD()
+
+if not df_detalle.empty:
+    # Generar nombre de archivo con fecha anterior
+    nombre_archivo = f'ODCxRECEP_{(datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")}.xlsx'
+
+    # Guardar el archivo
+    df_detalle.to_excel(nombre_archivo, index=False, sheet_name='ODC vs RECEP')
+
+    # Botón de descarga
+    with open(nombre_archivo, "rb") as file:
+        st.download_button("Descargar Excel", file, nombre_archivo,
+                           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+else:
+    st.warning("No hay datos disponibles para generar el archivo.")
+
 
 with tab2:
     st.write("PÁGINA EN CONSTRUCCIÓN")
